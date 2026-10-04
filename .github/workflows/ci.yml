@@ -1,0 +1,22 @@
+name: Lean verification
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1
+        with:
+          auto-config: false
+          build: false
+          use-mathlib-cache: true
+      - name: Check every production module and its axioms
+        run: python3 scripts/check.py --jobs 1
+      - name: Compare public statements and replay their proofs
+        run: scripts/comparator.sh --local
