@@ -1,0 +1,46 @@
+{
+  "verified_at_utc": "2026-10-04T08:12:43+00:00",
+  "paper": {
+    "arxiv": "2609.18132v1",
+    "numbered_items": 32,
+    "original_tex_sha256": "082e8a8abf5181ed332cf309d57e00e9a1f73c75c756ddb6a1a2f0edc4b1cf54"
+  },
+  "lean_toolchain": "leanprover/lean4:v4.29.0-rc6",
+  "mathlib_revision": "f156f7abd91ac67adb22bf999e5a71ba22e22e41",
+  "cleanup": {
+    "unused_modules_removed": 177,
+    "retained_original_modules": 1953,
+    "retained_mathematical_code": "unchanged"
+  },
+  "production": {
+    "production_modules": 1954,
+    "public_statements": 40,
+    "audited_declarations": 50384,
+    "source_digest": "688934c384a3e119058ba747bcfbf22abe4dbe23db147053008c46cf94bae914",
+    "allowed_axioms": [
+      "propext",
+      "Classical.choice",
+      "Quot.sound"
+    ],
+    "all_modules_built": true,
+    "kernel_environment_audit": "passed",
+    "transitive_axiom_audit": "passed"
+  },
+  "comparator": {
+    "revision": "e6831abb2f76b7ce6f2fb28e6410a0df878e6e4b",
+    "theorem_count": 40,
+    "statement_comparison": "passed",
+    "axiom_check": "passed",
+    "lean_kernel_replay": "passed",
+    "upstream_self_tests": "6 passed",
+    "mode": "local",
+    "os_sandbox_used": false,
+    "nanoda_run": false
+  },
+  "interface_sha256": {
+    "Statements.lean": "2653eb8ed979e102744647372e9c8d5b14a772109def4f83f343fdaa66185a92",
+    "Proofs.lean": "3ed8afc2e98ff08d912bd4e4bbd63c5a3f0d79eda02e1e0b75b91afa3823bf80",
+    "comparator.json": "8bc34d584912029e5788b01006fdf11109aef73eeea777d6d774049f2a2a552c"
+  },
+  "github_actions": "Configured; no remote run is claimed."
+}
