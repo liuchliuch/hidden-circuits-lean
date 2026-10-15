@@ -50,17 +50,39 @@ This release uses the Lean kernel; it does not claim an independent Nanoda run.
 The local command deliberately provides no operating-system sandbox and is
 intended for this reviewed source tree.
 
-For sandboxed checking on Linux, install
-[landrun](https://github.com/Zouuup/landrun) and provide a functioning user
+For sandboxed checking on Linux, install Go and provide a functioning user
 `systemd` session, then run:
 
 ```sh
 scripts/comparator.sh
 ```
 
-The script applies the address-family restriction recommended by current
-upstream Comparator guidance. It stops if the required sandbox tools are absent;
-it never silently falls back to local mode.
+The script builds pinned [Landrun](https://github.com/Zouuup/landrun) revision
+`811cfff51ceaf3d9843708aa6d22e9b84ccac8b4`. Preflight tests require an
+unprivileged user, Landlock ABI 6 or later, and effective filesystem, TCP and
+AF_UNIX restrictions. A systemd address-family guard complements Landrun.
+Sandbox mode never falls back to local mode. Tools are built outside the
+repository's writable build directory and checked against their pinned revisions.
+
+Both commands also test three invalid solutions: a changed conclusion, an
+added premise and an extra axiom. Each must fail with the expected Comparator
+diagnostic. Reports and logs are written under `.lake/ci/comparison/`.
+
+## Continuous integration
+
+The [workflow](https://github.com/liuchliuch/hidden-circuits-lean/actions/workflows/ci.yml)
+uses two Ubuntu 24.04 jobs, each with a 350-minute budget. The first starts with
+no project build products, builds every production module with two workers,
+and audits all production declarations. The second verifies the source commit
+and SHA-256 hashes of that run's build artifact before running the official
+Linux sandboxed Comparator on all 40 public statements and all three rejection
+controls. Reusing the checked build avoids compiling the library twice.
+
+The workflow retains source fingerprints, declaration inventories, command
+results and Comparator logs as artifacts. Dependency revisions, public
+statements and the axiom whitelist are unchanged. The original local release
+record is historical; current CI results establish whether a published commit
+passed the Linux checks.
 
 ## What is trusted
 

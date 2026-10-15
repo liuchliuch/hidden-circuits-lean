@@ -44,7 +44,10 @@ from the production build and axiom audit. Production proofs permit only
 `propext`, `Classical.choice`, and `Quot.sound`.
 
 The repository contains source, pinned configuration, documentation, and checks.
-Build products and dependency caches stay under `.lake/`. GitHub Actions runs
-the same checks. See [the release verification record](docs/validation.json).
+Build products and dependency caches stay under `.lake/`; verification tools
+are cached separately. GitHub Actions builds and audits the complete library,
+then runs the official Comparator in a Linux sandbox with three rejection tests.
+See [CI results](https://github.com/liuchliuch/hidden-circuits-lean/actions/workflows/ci.yml)
+and the [original local verification record](docs/validation.json).
 
 Licensed under [Apache-2.0](LICENSE).
