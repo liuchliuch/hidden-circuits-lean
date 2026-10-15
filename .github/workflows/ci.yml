@@ -1,22 +1,113 @@
 name: Lean verification
+
 on:
   push:
   pull_request:
   workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  LEAN_NUM_THREADS: 2
+  PYTHONDONTWRITEBYTECODE: 1
+  MATHLIB_NO_CACHE_ON_UPDATE: 1
+
 jobs:
-  verify:
-    runs-on: ubuntu-latest
-    timeout-minutes: 240
+  build:
+    name: Clean proof library and axiom audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Check the source distribution and scripts
+        run: |
+          python3 scripts/check.py --plan
+          python3 -c 'import ast,pathlib; [ast.parse(p.read_text(), filename=str(p)) for p in pathlib.Path("scripts").glob("*.py")]'
+          for script in scripts/*.sh; do bash -n "$script"; done
+      - name: Prepare disposable runner resources
+        run: bash scripts/prepare_ci.sh
       - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1
         with:
           auto-config: false
           build: false
+          test: false
+          lint: false
           use-mathlib-cache: true
-      - name: Check every production module and its axioms
-        run: python3 scripts/check.py --jobs 1
-      - name: Compare public statements and replay their proofs
-        run: scripts/comparator.sh --local
+          use-github-cache: false
+      - name: Rebuild every production module and audit all declarations
+        run: python3 scripts/ci.py build
+      - name: Archive this run's verified Linux build
+        run: tar --exclude='*.setup.json' -I 'zstd -T2 -3' -cf "$RUNNER_TEMP/proof-build.tar.zst" .lake/build .lake/ci/build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-build
+          path: ${{ runner.temp }}/proof-build.tar.zst
+          compression-level: 0
+          retention-days: 1
+      - name: Retain build verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: build-verification
+          include-hidden-files: true
+          path: |
+            .lake/ci/build/
+            .lake/check/
+          retention-days: 14
+
+  comparator:
+    name: Official Comparator and negative controls
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Prepare disposable runner resources
+        run: bash scripts/prepare_ci.sh
+      - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-mathlib-cache: true
+          use-github-cache: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: linux-build
+          path: ${{ runner.temp }}/verified-build
+      - name: Restore the build from this workflow run
+        run: |
+          tar --zstd -xf "$RUNNER_TEMP/verified-build/proof-build.tar.zst"
+          rm "$RUNNER_TEMP/verified-build/proof-build.tar.zst"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.24.x'
+          cache: false
+      - name: Start the user systemd manager
+        run: |
+          sudo loginctl enable-linger "$USER"
+          sudo systemctl start "user@$(id -u).service"
+          echo "XDG_RUNTIME_DIR=/run/user/$(id -u)" >> "$GITHUB_ENV"
+          echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus" >> "$GITHUB_ENV"
+      - name: Verify build hashes and run the sandboxed official Comparator
+        run: python3 scripts/ci.py comparator
+      - name: Retain Comparator evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: comparator-verification
+          include-hidden-files: true
+          path: |
+            .lake/ci/comparator/
+            .lake/ci/comparison/
+          retention-days: 14
